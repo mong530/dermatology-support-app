@@ -1,6 +1,11 @@
-import os
+# app.py（全文・修正版）
+# - data.csv を「この app.py と同じフォルダ（derma_app）」から確実に読む
+# - 「date.csv」探索はやめて混乱を防ぐ
+# - st.set_page_config の行末に混ざっていた文字（全角空白等）を除去
+
 import html
 import unicodedata
+from pathlib import Path
 
 import streamlit as st
 import pandas as pd
@@ -177,18 +182,13 @@ def find_exact_name_with_aliases(query: str, name_to_targets: dict[str, list[str
     return None
 
 # -------------------------
-# CSVパス（data.csv / date.csv のどっちでもOK）
+# CSVパス（app.py と同じフォルダの data.csv を確実に読む）
 # -------------------------
-def pick_csv_path() -> str:
-    if os.path.exists("data.csv"):
-        return "data.csv"
-    if os.path.exists("date.csv"):
-        return "date.csv"
-    return ""
+APP_DIR = Path(__file__).resolve().parent          # derma_app フォルダ
+CSV_PATH = APP_DIR / "data.csv"
 
-CSV_PATH = pick_csv_path()
-if not CSV_PATH:
-    st.error("data.csv も date.csv も見つかりません。app.py と同じフォルダに置いてください。")
+if not CSV_PATH.exists():
+    st.error(f"data.csv が見つかりません。\n置き場所：{CSV_PATH}\napp.py と同じフォルダ（derma_app）に data.csv を置いてください。")
     st.stop()
 
 # -------------------------
@@ -197,8 +197,8 @@ if not CSV_PATH:
 # ★aliases 列があれば検索対象に含める（なくてもOK）
 # -------------------------
 @st.cache_data
-def load_csv(path: str, mtime: float) -> pd.DataFrame:
-    df = pd.read_csv(path, encoding="utf-8-sig")
+def load_csv(path_str: str, mtime: float) -> pd.DataFrame:
+    df = pd.read_csv(path_str, encoding="utf-8-sig")
     df.columns = df.columns.str.strip()
     df = df.fillna("")
 
@@ -218,8 +218,8 @@ def load_csv(path: str, mtime: float) -> pd.DataFrame:
     return df
 
 try:
-    mtime = os.path.getmtime(CSV_PATH)
-    df = load_csv(CSV_PATH, mtime)
+    mtime = CSV_PATH.stat().st_mtime
+    df = load_csv(str(CSV_PATH), mtime)
 except Exception as e:
     st.error("CSVの読み込みに失敗しました。")
     st.code(str(e))
@@ -265,7 +265,7 @@ if "query_text" not in st.session_state:
 def render_header():
     st.markdown("# 🩺 皮膚科 症状説明アプリ")
     st.markdown(
-        f'<div class="small-muted">読み込み中：<b>{html.escape(CSV_PATH)}</b>（CSVを保存すると自動で反映されます）</div>',
+        f'<div class="small-muted">読み込み中：<b>{html.escape(str(CSV_PATH.name))}</b>（CSVを保存すると自動で反映されます）</div>',
         unsafe_allow_html=True
     )
     st.write("")
