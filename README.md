@@ -39,3 +39,11 @@ https://dermatology-support-app.streamlit.app/
 * UIの改善
 * 検索機能の精度向上
 * データ管理機能の強化
+
+## 画面イメージ
+
+### ホーム画面
+![ホーム画面](home.png)
+
+### 検索画面
+![検索画面](search.png)
